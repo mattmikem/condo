@@ -72,7 +72,38 @@ gsort -Pop
 gen city_rank = _n
 
 save ords_full, replace
+
+keep Place Pop Date1 Rank1
+
+forvalues y = 1970(10)2010 {
+
+gen regd`y' = 0
+gen regm`y' = 0
+ 
+replace regd`y' = 1     if Date1 < `y' & Rank1 > 0
+replace regm`y' = Rank1 if Date1 < `y'
+
+}
+ 
+reshape clear
+reshape i Place Pop
+reshape j year
+reshape xij regd regm
+reshape long
+
+split Place, gen(geo) parse(",")
+
+replace geo1 = trim(geo1)
+replace geo2 = trim(geo2)
+
+rename geo1 city
+rename geo2 state
+
+export excel using "condos_fortableau.xls", replace first(var)
+
 clear
+
+
 
 /*
 

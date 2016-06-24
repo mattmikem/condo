@@ -25,6 +25,7 @@ statase -b condo_predict_ncdb.do
 statase -b boundary_build.do
 ::statase -b ords_analysis.do  
 statase -b dd_iv_analysis.do
+statese -b boundary_analysis.do
 
 
 	

@@ -23,15 +23,26 @@ global data  = "L:\Research\Condos\Data"
 global work  = "L:\Research\Condos\Working Data"
 global out   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Output\05-18-2016"
 global pro   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Programs"
+global cc    = "L:\Research\Resurgence\Working Files"
 
-global thr_u = 101
+global thr_u = 50
 global thr_l = 0
 global N = $thr_u
 quietly do "$pro\for_dd_iv_build.do"
 
 ***OBS LEVEL STABLE
 
+use "$cc\city_centers.dta"
+
+destring geo2010, replace
+
+keep ua_code geo2010 cc_*
+
+save cc, replace
+
 use "$work\condo_full.dta"
+
+joinby geo2010 using cc, unmatched(master)
 
 **DDD Analysis on Condos
 
@@ -41,15 +52,15 @@ use "$work\condo_full.dta"
 
 gen post = 0
 
-*replace post = 1 if year > reg_year & reg_year != .
-*replace post = 1 if year > 1980 & reg_year == .
-*replace post = 1 if year > 1980 & reg_year > 2010
+replace post = 1 if year > Date1 & Date1 != .
+replace post = 1 if year > 1980  & Date1 == .
+replace post = 1 if year > 1980  & Date1 > 2010
 
 **Without condo percentages in each year, just need pre year and post
 
 local b = 1970
 
-replace post = 1 if year == 2010
+*replace post = 1 if year == 2010
 
 **Local city regulation
 
@@ -69,7 +80,7 @@ replace loc_ord_msa = 1 if msa_w_ord == 1 & msa_w_ord != .
 *label var post_cc          "Post-Condo Ord $\times$ Central City Tract"
 *label var cc_loc_ord_post  "Post-Condo Ord $\times$ CC Tract $\times$ MSA with Condo Ord"
 
-keep if year == 1970 | year == 1980 | year == 2010
+keep if year == 1970 | year == 1980 | year == 1990 | year == 2000 | year == 2010
 
 *Start with effect on condo rates
 
@@ -165,12 +176,15 @@ gen post_top         = top_city*post
 gen post_loc_ord_msa = loc_ord_msa*post
 gen post_loc_ord     = loc_ord*post
 
+gen top_conf = 0
+replace top_conf = 1 if top_city == 0 & loc_ord == 1
+
 forvalues d = 200(200)3200 { 
 
 *eststo: reg cond_pct cc_status loc_ord_msa cc_loc_ord if year == 2010 & bound_dist <= `d', r
 *eststo: reg cond_pct top_city  loc_ord_msa loc_ord  if year == 2010 & bound_dist <= `d', r
 
-eststo: reg own top_city loc_ord_msa post post_top post_loc_ord_msa post_loc_ord if bound_dist <= `d' & l4_munit5pl > 0.5
+eststo: reg own top_city loc_ord_msa post post_top post_loc_ord_msa post_loc_ord if bound_dist <= `d' & l4_munit5pl > 0.55 & top_conf == 0
 
 mat b = e(b)
 mat var = vecdiag(e(V))
@@ -204,9 +218,9 @@ twoway connected ci_low_dd coeff_dd ci_high_dd dist if dist < 3500 & dist != .,
 name(bound_cond, replace)
 title(`title')
 xtitle("Distance from Boundary (meters)")
-ytitle("DDD Estimate on Ownership (Central  City vs Suburbs)")
+ytitle("DDD Estimate on Ownership")
 xline(3100)
-note("Value at $max_p1, after vertical red line, corresponds to estimate including all tracts.")
+note("Value at $max_p1, after vertical red line, corresponds to estimate including all tracts." "Includes tracts where more than half of the structures contain more than five units.")
 legend(label(1 "95% CI Low") label(2 "DD Estimate") label(3 "95% CI High"))
 lcolor(gray blue gray)
 mcolor(gray blue gray)
@@ -220,7 +234,37 @@ sum coeff se
 
 drop ci* coeff* se*
 
+clear matrix
 xx
+**Additional estimates
+
+eststo: reg own post top_city loc_ord_msa post_top post_loc_ord_msa post_loc_ord if bound_dist < 1600 & l4_munit5pl > 0.55, r
+eststo: reg own post loc_ord post_loc_ord if top_city == 1 & bound_dist < 1600, r
+eststo: reg own post loc_ord post_loc_ord if cc_2 == 1, r
+eststo: reg own post loc_ord post_loc_ord if cc_1 == 1,r
+
+label var post_loc_ord "Local Ordinance $\times$ Post"
+
+#delimit ;
+esttab using "$out\own_reg.tex", replace label 
+title("Effects of Ordinances on Ownership") se brackets
+order(post_loc_ord) keep(post_loc_ord)
+mtitle("DDD" "City tracts at Boundary" "City Center (lax)" "City Center (strict)")
+addnote("Tracts are indexed by time (pre and post ordinance) and regulatory status (if there was ever a local ordinance re condos)." ) 
+r2 nocons ;
+
+#delimit cr
+
+clear matrix
+
+
+**Explore condo versus ownership a bit more.
+
+xtile munit5pl_tile = l4_munit5pl, nq(10)
+
+xx
+
+
 *drop dist bound_$max_p1
 /*
 #delimit ;
