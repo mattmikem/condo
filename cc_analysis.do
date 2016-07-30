@@ -21,11 +21,11 @@ set maxvar 30000
 
 global data  = "L:\Research\Condos\Data"
 global work  = "L:\Research\Condos\Working Data"
-global out   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Output\06-06-2016"
+global out   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Output\07-18-2016"
 global pro   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Programs"
 global cc    = "L:\Research\Resurgence\Working Files"
 
-global thr_u = 50
+global thr_u = 100
 global thr_l = 0
 global N = $thr_u
 quietly do "$pro\for_dd_iv_build.do"
@@ -126,7 +126,32 @@ label var top_city "Central City"
 
 gen h_post_loc_ord = L.munit5pl*post_loc_ord
 
-xtset ua_code
+destring cbsa, gen(cbsa_num)
+xtset cbsa_num
+
+**Distributions
+
+#delimit ;
+kdensity chat_l4_st if cc_2 == 1, addplot(kdensity chat_l4_st if cc_1 == 1)
+name(chat_dens, replace)
+title("Density by Predicted Condo Propensity")
+legend(order(1 "Lax" 2 "Strict"))
+graphregion(color(white)) bgcolor(white);
+kdensity popdens if cc_2 == 1, addplot(kdensity popdens if cc_1 == 1)
+name(pd_dens, replace)
+title("Density by Population Density")
+legend(order(1 "Lax" 2 "Strict"))
+graphregion(color(white)) bgcolor(white);
+kdensity munit5pl if cc_2 == 1, addplot(kdensity munit5pl if cc_1 == 1)
+name(munit5pl_dens, replace)
+title("Density by Pct 5+ Units")
+legend(order(1 "Lax" 2 "Strict"))
+graphregion(color(white)) bgcolor(white);
+#delimit cr
+
+graph export "$out\chat_dens.png", replace name(chat_dens)
+graph export "$out\pd_dens.png", replace name(pd_dens)
+graph export "$out\munit5pl_dens.png", replace name(munit5pl_dens)
 
 keep if lminc != . & educ_b != . & shrwht != .
 
@@ -221,10 +246,73 @@ addnote("Limited to city center neighborhoods (lax or strict)." "All specificati
 "Top $thr_u cities are included.") 
 r2 nocons star(+ .1 * 0.05 ** 0.01 *** 0.001);
 #delimit cr
-xx
-
 
 clear matrix
+
+
+**Steps by condo likelihood 
+
+xtset geo2010 year, delta(10)
+
+gen     pd_base = popdens
+replace pd_base = L.popdens  if year == 1980
+replace pd_base = L2.popdens if year == 1990
+replace pd_base = L3.popdens if year == 2000
+replace pd_base = L4.popdens if year == 2010
+
+gen     munit5pl_base = munit5pl
+replace munit5pl_base = L.munit5pl  if year == 1980
+replace munit5pl_base = L2.munit5pl if year == 1990
+replace munit5pl_base = L3.munit5pl if year == 2000
+replace munit5pl_base = L4.munit5pl if year == 2010
+
+gen     chat_base = chat_l4_st
+replace chat_base = F.chat_l4_st  if year == 2000
+replace chat_base = F2.chat_l4_st if year == 1990
+replace chat_base = F3.chat_l4_st if year == 1980
+replace chat_base = F4.chat_l4_st if year == 1970
+
+
+**Distributions
+
+label var chat_base     "Condo Propensity"
+label var pd_base       "Pop Density"
+label var munit5pl_base "Pct 5+ Units"
+
+#delimit ;
+kdensity chat_l4_st if cc_2 == 1, addplot(kdensity chat_l4_st if cc_1 == 1)
+name(chat_dens, replace)
+title("Density by Predicted Condo Propensity")
+legend(order(1 "Lax" 2 "Strict"))
+graphregion(color(white)) bgcolor(white);
+kdensity popdens if cc_2 == 1, addplot(kdensity popdens if cc_1 == 1)
+name(pd_dens, replace)
+title("Density by Population Density")
+legend(order(1 "Lax" 2 "Strict"))
+graphregion(color(white)) bgcolor(white);
+kdensity munit5pl if cc_2 == 1, addplot(kdensity munit5pl if cc_1 == 1)
+name(munit5pl_dens, replace)
+title("Density by Pct 5+ Units")
+legend(order(1 "Lax" 2 "Strict"))
+graphregion(color(white)) bgcolor(white);
+#delimit cr
+
+graph export "$out\chat_dens.png", replace name(chat_dens)
+graph export "$out\pd_dens.png", replace name(pd_dens)
+graph export "$out\munit5pl_dens.png", replace name(munit5pl_dens)
+
+xtset cbsa_num
+
+cut_reg pd_base       100 own "post_loc_ord i.year " post_loc_ord "cc_1 != 1000" "fe vce(robust)" "Effect by Population Density Restriction" "Population Density"
+cut_reg chat_base     100 own "post_loc_ord i.year " post_loc_ord "cc_1 != 1000" "fe vce(robust)" "Effect by Condo Propensity Restriction" "Condo Propensity"
+cut_reg munit5pl_base 100 own "post_loc_ord i.year " post_loc_ord "cc_1 != 1000" "fe vce(robust)" "Effect by Pct 5+ Unit Restriction" "Pct 5+ Units"
+
+graph export "$out\pd_base.png", replace name(pd_base)
+graph export "$out\chat_base.png", replace name(chat_base)
+graph export "$out\munit5pl_base.png", replace name(munit5pl_base)
+
+
+xx
 
 
 **Limit to 1980+
@@ -270,47 +358,47 @@ replace var_names = "Log Mean Income"             if _n == 1
 replace var_names = "Share with Bachelors Degree" if _n == 2
 replace var_names = "Share White"                 if _n == 3
 
-local j = 1
 
-local d = 200
-local lag = 4
+tab year, gen(yr)
+
+local j = 1
 
 foreach y in $yy {
 
-*eststo: reg d`y' cond_pct   $x_p                                                 if bound_dist < `d' & year == 2010, r
+	*eststo: reg d`y' cond_pct   $x_p                                                 if bound_dist < `d' & year == 2010, r
 
-eststo: xtreg    `y' own i.year if cc_2 == 1, fe vce(robust)	
-eststo: ivreg2   `y' i.year (own = post_loc_ord) if cc_2 == 1, cluster(ua_code) first
-eststo: xtivreg2 `y' i.year (own = post_loc_ord) if cc_2 == 1,  fe cluster(ua_code) first
-*estat overid
-*eststo: reg `y' own $x_p if cc_2 == 1, r
-*eststo: ivregress 2sls `y' $x_p (own = post loc_ord post_loc_ord) if cc_2 == 1, vce(r) first
-*estat overid
+	eststo: xtreg    `y' own i.year if cc_2 == 1, fe vce(robust)	
+	*eststo: ivreg2   `y' (own = post_loc_ord) if cc_2 == 1, cluster(cbsa_num year) first
+	eststo: xtivreg `y' i.year (own = post_loc_ord) if cc_2 == 1,  fe vce(conventional) first small
+	*estat overid
+	*eststo: reg `y' own $x_p if cc_2 == 1, r
+	*eststo: ivregress 2sls `y' $x_p (own = post loc_ord post_loc_ord) if cc_2 == 1, vce(r) first
+	*estat overid
 
-eststo: reg      `y' own  if cc_1 == 1, r
-eststo: xtreg    `y' own  if cc_1 == 1, fe vce(robust)	
-eststo: ivreg2   `y' (own = post loc_ord post_loc_ord) if cc_1 == 1, cluster(ua_code) first
-eststo: xtivreg2 `y' (own = post loc_ord post_loc_ord) if cc_1 == 1,  fe cluster(ua_code) first
+	*eststo: reg      `y' own  if cc_1 == 1, r
+	eststo: xtreg   `y' own i.year if cc_1 == 1, fe vce(robust)	
+	*eststo: ivreg2   `y' (own = post loc_ord post_loc_ord) if cc_1 == 1, cluster(ua_code) first
+	eststo: xtivreg `y' i.year (own = post_loc_ord) if cc_1 == 1,  fe vce(conventional) first small
 
-local t = var_names[`j']
-local title = "Effect of Ownership on "+ "`t'"
-local lt = lower("`t'")
+	local t = var_names[`j']
+	local title = "Effect of Ownership on "+ "`t'"
+	local lt = lower("`t'")
 
-#delimit ;
-esttab using "$out\dd_iv_`y'.tex", replace label 
-title("`title'") se brackets
-addnote("Limited to city center neighborhoods (lax or strict)." "All specifications have clustered standard errors by city." "Top 100 cities are included.")
-order(own) keep(own)
-mtitle("Lax, OLS" "Lax, FE" "Lax, IV" "Lax, IV FE" "Strict, OLS" "Strict, FE" "Strict, IV" "Strict, IV FE" )
-nocons ;
+	#delimit ;
+	esttab using "$out\dd_iv_`y'.tex", replace label 
+	title("`title'") se brackets
+	addnote("Limited to city center neighborhoods (lax or strict)." "All specifications have clustered standard errors by city." "Top 100 cities are included.")
+	order(own) keep(own)
+	mtitle("Lax, FE" "Lax, FE-IV" "Strict, FE" "Strict, FE-IV")
+	nocons ;
 
-#delimit cr
+	#delimit cr
 
-local j = `j' + 1
+	local j = `j' + 1
 
-clear matrix
+	clear matrix
 
-}
+	}
 
 local j = 1
 xx

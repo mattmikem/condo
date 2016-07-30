@@ -316,6 +316,14 @@ gen hu_age30_40_2010  = bltyr791a
 egen hu_age40pl_2010  = rowtotal(bltyr391a bltyr491a bltyr591a bltyr691a)
 egen hu_age30pl_2010  = rowtotal(hu_age30_40_2010 hu_age40pl_2010)
 
+*Pop Density
+
+gen popdens_1970 = trctpop7/arealand
+gen popdens_1980 = trctpop8/arealand
+gen popdens_1990 = trctpop9/arealand
+gen popdens_2000 = trctpop0/arealand
+gen popdens_2010 = trctpop1/arealand
+
 *Income 
 
 **N HHs
@@ -433,9 +441,9 @@ forvalues y = 1980(10)1990 {
 
 local i = (`y' - 1900)/10
 
-replace commut25_`y'   = commut25_`y'/wrcnty`i'd
-replace commut25_45`y' = commut25_45`y'/wrcnty`i'd
-replace commut45pl_`y' = commut45pl_`y'/wrcnty`i'd
+replace commut25_`y'    = commut25_`y'/wrcnty`i'd
+replace commut25_45_`y' = commut25_45_`y'/wrcnty`i'd
+replace commut45pl_`y'  = commut45pl_`y'/wrcnty`i'd
 } 
 
 **Ownership
@@ -511,7 +519,7 @@ replace auto_1990 = 1 if auto_1990 > 1
 replace auto_2000 = 1 if auto_2000 > 1
 replace auto_2010 = 1 if auto_2010 > 1
 
-keep geo2010 state stusab place cbsa* munit* mbed* hu_age* own_* tothu_* vachu_* educ_b* educ_hs* marshr* minc* emp* shrwht_* age* commut25_* commut25_45* commut45pl* auto* trvlpb_* wkhome*
+keep geo2010 state stusab place cbsa* munit* mbed* hu_age* popdens* own_* tothu_* vachu_* educ_b* educ_hs* marshr* minc* emp* shrwht_* age* commut25_* commut25_45* commut45pl* auto* trvlpb_* wkhome*
 
 keep if cbsa != ""
 
@@ -522,7 +530,7 @@ keep if cbsa != ""
 #delimit ;
 global xij_str = 
 "munit1d munit1a munit2_4 munit5pl mbed0 mbed1 mbed2 mbed3 mbed4pl hu_age10_20 hu_age20_30 hu_age30_40 hu_age40pl 
-hu_age30pl own tothu vachu marshr educ_b educ_hs minc emp shrwht age35_65 age65pl commut25 commut25_45 commut45pl auto trvlpb wkhome";
+hu_age30pl popdens own tothu vachu marshr educ_b educ_hs minc emp shrwht age35_65 age65pl commut25 commut25_45 commut45pl auto trvlpb wkhome";
 #delimit cr
 
 reshape clear
