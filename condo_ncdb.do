@@ -396,29 +396,102 @@ rename shrwht9 shrwht_1990
 rename shrwht0 shrwht_2000
 rename shrwht1 shrwht_2010
 
-*Age
+*Age 
 
-egen age35_65_1970 = rowtotal(fem347 fem447 fem547 fem647 men347 men447 men547 men647)
-egen age65pl_1970  = rowtotal(fem747 fem757 men747 men757)
-egen age35_65_1980 = rowtotal(fem348 fem448 fem548 fem648 men348 men448 men548 men648)
-egen age65pl_1980  = rowtotal(fem748 fem758 men748 men758)
-egen age35_65_1990 = rowtotal(fem349 fem449 fem549 fem649 men349 men449 men549 men649)
-egen age65pl_1990  = rowtotal(fem749 fem759 men749 men759)
-egen age35_65_2000 = rowtotal(fem340 fem440 fem540 fem640 men340 men440 men540 men640)
-egen age65pl_2000  = rowtotal(fem740 fem750 men740 men750)
-egen age35_65_2010 = rowtotal(fem341 fem441 fem541 fem641 men341 men441 men541 men641)
-egen age65pl_2010  = rowtotal(fem741 fem751 men741 men751)
+forvalues y = 1970(10)2010 {
 
-replace age35_65_1970 = age35_65_1970/trctpop7
-replace age65pl_1970 = age65pl_1970/trctpop7
-replace age35_65_1980 = age35_65_1980/trctpop8
-replace age65pl_1980 = age65pl_1980/trctpop8
-replace age35_65_1990 = age35_65_1990/trctpop9
-replace age65pl_1990 = age65pl_1990/trctpop9
-replace age35_65_2000 = age35_65_2000/trctpop0
-replace age65pl_2000 = age65pl_2000/trctpop0
-replace age35_65_2010 = age35_65_2010/trctpop1
-replace age65pl_2010 = age65pl_2010/trctpop1
+local yy = (`y'-1900)/10
+if `yy' > 9 {
+local yy = `yy' - 10
+}
+
+egen age20_25_`y' = rowtotal(fem24`yy' men24`yy')
+egen age25_35_`y' = rowtotal(fem29`yy' fem34`yy' men29`yy' men34`yy')
+egen age35_45_`y' = rowtotal(fem44`yy' men44`yy')
+egen age45_55_`y' = rowtotal(fem54`yy' men54`yy')
+egen age55_65_`y' = rowtotal(fem64`yy' men64`yy')
+egen age65pl_`y'  = rowtotal(fem74`yy' fem75`yy' men74`yy' men75`yy')
+
+
+replace age20_25_`y' = age20_25_`y'/trctpop`yy'
+replace age25_35_`y' = age25_35_`y'/trctpop`yy'
+replace age35_45_`y' = age35_45_`y'/trctpop`yy'
+replace age45_55_`y' = age45_55_`y'/trctpop`yy'
+replace age55_65_`y' = age55_65_`y'/trctpop`yy'
+replace age65pl_`y'  = age65pl_`y'/trctpop`yy'
+
+
+}
+
+
+*Birth Cohorts
+
+egen bc_1905_1970 = rowtotal(fem747 fem757 men747 men757)
+egen bc_1915_1970 = rowtotal(fem647 men647)
+egen bc_1925_1970 = rowtotal(fem547 men547)
+egen bc_1935_1970 = rowtotal(fem447 men447)
+egen bc_1945_1970 = rowtotal(fem297 fem347 men297 men347)
+egen bc_1955_1970 = rowtotal(fem197 fem247 men197 men247)
+egen bc_1965_1970 = rowtotal(fem97 fem147 men97 men147)
+egen bc_1975_1970 = rowtotal(fem47 men47)
+
+egen bc_1905_1980 = rowtotal(fem758 men758)
+egen bc_1915_1980 = rowtotal(fem748 men748)
+egen bc_1925_1980 = rowtotal(fem648 men648)
+egen bc_1935_1980 = rowtotal(fem548 men548)
+egen bc_1945_1980 = rowtotal(fem448 men448)
+egen bc_1955_1980 = rowtotal(fem298 fem348 men298 men348)
+egen bc_1965_1980 = rowtotal(fem198 fem248 men198 men248)
+egen bc_1975_1980 = rowtotal(fem98 fem148 men98 men148)
+egen bc_1985_1980 = rowtotal(fem48 men48)
+
+egen bc_1915_1990 = rowtotal(fem759 men759)
+egen bc_1925_1990 = rowtotal(fem749 men749)
+egen bc_1935_1990 = rowtotal(fem649 men649)
+egen bc_1945_1990 = rowtotal(fem549 men549)
+egen bc_1955_1990 = rowtotal(fem449 men449)
+egen bc_1965_1990 = rowtotal(fem299 fem349 men299 men349)
+egen bc_1975_1990 = rowtotal(fem199 fem249 men199 men249)
+egen bc_1985_1990 = rowtotal(fem99 fem149 men99 men149)
+egen bc_1995_1990 = rowtotal(fem49 men49)
+
+egen bc_1925_2000 = rowtotal(fem750 men750)
+egen bc_1935_2000 = rowtotal(fem740 men740)
+egen bc_1945_2000 = rowtotal(fem640 men640)
+egen bc_1955_2000 = rowtotal(fem540 men540)
+egen bc_1965_2000 = rowtotal(fem440 men440)
+egen bc_1975_2000 = rowtotal(fem290 fem340 men290 men340)
+egen bc_1985_2000 = rowtotal(fem190 fem240 men190 men240)
+egen bc_1995_2000 = rowtotal(fem90 fem140 men90 men140)
+egen bc_2005_2000 = rowtotal(fem40 men40)
+
+egen bc_1935_2010 = rowtotal(fem741 men741)
+egen bc_1955_2010 = rowtotal(fem641 men641)
+egen bc_1965_2010 = rowtotal(fem541 men541)
+egen bc_1975_2010 = rowtotal(fem441 men441)
+egen bc_1985_2010 = rowtotal(fem291 fem341 men291 men341)
+egen bc_1995_2010 = rowtotal(fem191 fem241 men191 men241)
+egen bc_2005_2010 = rowtotal(fem91 fem141 men91 men141)
+egen bc_2015_2010 = rowtotal(fem41 men41)
+
+   
+forvalues y = 1970(10)2010 {
+
+forvalues yy = 1905(10)2015 {
+
+local i = (`y'-1900)/10
+
+if `i' > 9 {
+local i = `i' - 10
+}
+
+capture replace bc_`yy'_`y' = bc_`yy'_`y'/trctpop`i'
+capture replace bc_`yy'_`y' = 1 if bc_`yy'_`y' > 1 
+
+}
+}
+
+
 
 *Commuting
 
@@ -519,7 +592,7 @@ replace auto_1990 = 1 if auto_1990 > 1
 replace auto_2000 = 1 if auto_2000 > 1
 replace auto_2010 = 1 if auto_2010 > 1
 
-keep geo2010 state stusab place cbsa* munit* mbed* hu_age* popdens* own_* tothu_* vachu_* educ_b* educ_hs* marshr* minc* emp* shrwht_* age* commut25_* commut25_45* commut45pl* auto* trvlpb_* wkhome*
+keep geo2010 state stusab place bc_* cbsa* munit* mbed* hu_age* popdens* own_* tothu_* vachu_* educ_b* educ_hs* marshr* minc* emp* shrwht_* age* commut25_* commut25_45* commut45pl* auto* trvlpb_* wkhome*
 
 keep if cbsa != ""
 
@@ -530,7 +603,8 @@ keep if cbsa != ""
 #delimit ;
 global xij_str = 
 "munit1d munit1a munit2_4 munit5pl mbed0 mbed1 mbed2 mbed3 mbed4pl hu_age10_20 hu_age20_30 hu_age30_40 hu_age40pl 
-hu_age30pl popdens own tothu vachu marshr educ_b educ_hs minc emp shrwht age35_65 age65pl commut25 commut25_45 commut45pl auto trvlpb wkhome";
+hu_age30pl popdens own tothu vachu marshr educ_b educ_hs minc emp shrwht bc_1905 bc_1915 bc_1925 bc_1935 bc_1945 bc_1955
+bc_1965 bc_1975 bc_1985 bc_1995 bc_2005 bc_2015 age20_25 age25_35 age35_45 age45_55 age55_65 age65pl commut25 commut25_45 commut45pl auto trvlpb wkhome";
 #delimit cr
 
 reshape clear
@@ -553,9 +627,9 @@ gen source = "NCDB"
 
 **Limitations due to data error
 
-replace shrwht = 1 if shrwht > 1
-drop if age35_65 > 1 | age65pl > 1
-drop if marshr > 1
+foreach v of varlist shrwht age20_25 age25_35 age35_45 age45_55 age55_65 age65pl marshr {
+replace `v' = 1 if `v' > 1
+}
 
 rename state state_code
 rename stusab state

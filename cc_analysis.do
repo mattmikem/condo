@@ -21,7 +21,7 @@ set maxvar 30000
 
 global data  = "L:\Research\Condos\Data"
 global work  = "L:\Research\Condos\Working Data"
-global out   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Output\07-18-2016"
+global out   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Output\08-01-2016"
 global pro   = "C:\Users\mmiller\Dropbox\Research\Urban\Papers\Condos\FOR_MATT\Programs"
 global cc    = "L:\Research\Resurgence\Working Files"
 
@@ -97,6 +97,9 @@ replace cond_pct = 0 if year == 1970 | year == 1980
 global x_p = "munit1a munit2_4 munit5pl mbed1 mbed2 mbed3 mbed4pl 
 			  hu_age10_20 hu_age20_30 hu_age30_40 vachu trvlpb wkhome 
 			  auto";
+global x_pb = "munit1a_base munit2_4_base munit5pl_base mbed1_base mbed2_base mbed3_base mbed4pl_base 
+			  hu_age10_20_base hu_age20_30_base hu_age30_40_base vachu_base trvlpb_base wkhome_base 
+			  auto_base";			  
 
 #delimit cr
 
@@ -106,6 +109,19 @@ foreach y of varlist $yy {
 
 gen d`y' = D.`y'
 gen l`y' = L.`y'
+
+}
+
+foreach v of varlist $x_p {
+
+gen `v'_base = .
+replace `v'_base = `v'    if year == 1970
+replace `v'_base = L.`v'  if year == 1980
+replace `v'_base = L2.`v' if year == 1990
+replace `v'_base = L3.`v' if year == 2000
+replace `v'_base = L4.`v' if year == 2010
+
+*global x_pb "$x_pb" " " "`v'_base"
 
 }
 
@@ -156,12 +172,12 @@ graph export "$out\munit5pl_dens.png", replace name(munit5pl_dens)
 keep if lminc != . & educ_b != . & shrwht != .
 
 *eststo: reg   own post_loc_ord i.year i.ua_code if cc_2 == 1, cluster(ua_code) 
-eststo: xtreg own post_loc_ord i.year           if cc_2 == 1, fe vce(robust)
-eststo: xtreg own post_loc_ord i.year $x_p      if cc_2 == 1, fe vce(robust)
+eststo: xtreg own post_loc_ord i.year age*         if cc_2 == 1, fe vce(robust)
+eststo: xtreg own post_loc_ord i.year age* $x_pb     if cc_2 == 1, fe vce(robust)
  
 *eststo: reg   own post_loc_ord i.year i.ua_code if cc_1 == 1, cluster(ua_code) 
-eststo: xtreg own post_loc_ord i.year           if cc_1 == 1, fe vce(robust)
-eststo: xtreg own post_loc_ord i.year $x_p      if cc_1 == 1, fe vce(robust)
+eststo: xtreg own post_loc_ord i.year age*          if cc_1 == 1, fe vce(robust)
+eststo: xtreg own post_loc_ord i.year age* $x_pb     if cc_1 == 1, fe vce(robust)
 
 *eststo: reg   own post loc_ord post_loc_ord      if cc_1 == 1, cluster(ua_code)
 *eststo: xtreg own post loc_ord post_loc_ord      if cc_1 == 1, fe vce(robust)
@@ -174,7 +190,7 @@ esttab using "$out\own_reg.tex", replace label
 title("Effects of Ordinances on Ownership (also, First Stage)") se brackets
 order(post_loc_ord) keep(post_loc_ord)
 mtitle("Lax" "Lax with X" "Strict" "Strict, with X" )
-addnote("Limited to city center neighborhoods (lax or strict)." "All specifications include city and year fixed effects." "All specifications have clustered standard errors by city." "Controls X are for housing characteristics at the neighborhood level." 
+addnote("Limited to city center neighborhoods (lax or strict)." "All specifications include city and year fixed effects." "All specifications have clustered standard errors by city." "Controls X are for 1970 housing characteristics at the neighborhood level." 
 "Top $thr_u cities are included.") 
 r2 nocons star(+ .1 * 0.05 ** 0.01 *** 0.001);
 #delimit cr
@@ -207,13 +223,10 @@ r2 nocons star(+ .1 * 0.05 ** 0.01 *** 0.001);
 
 clear matrix
 
-
 gen plo1980 = 0
 gen plo1990 = 0
 gen plo2000 = 0
 gen plo2010 = 0
-
-
 
 forvalues y = 1980(10)2010 {
 
@@ -225,11 +238,11 @@ label var plo`y' "Ord Passed between `y_1' and `y'"
 
 *eststo: reg   own post_loc_ord i.year i.ua_code if cc_2 == 1, cluster(ua_code) 
 eststo: xtreg own plo1980 plo1990 plo2000 plo2010 i.year           if cc_2 == 1, fe vce(robust)
-eststo: xtreg own plo1980 plo1990 plo2000 plo2010 i.year $x_p      if cc_2 == 1, fe vce(robust)
+eststo: xtreg own plo1980 plo1990 plo2000 plo2010 i.year $x_pb      if cc_2 == 1, fe vce(robust)
  
 *eststo: reg   own post_loc_ord i.year i.ua_code if cc_1 == 1, cluster(ua_code) 
 eststo: xtreg own plo1980 plo1990 plo2000 plo2010 i.year           if cc_1 == 1, fe vce(robust)
-eststo: xtreg own plo1980 plo1990 plo2000 plo2010 i.year $x_p      if cc_1 == 1, fe vce(robust)
+eststo: xtreg own plo1980 plo1990 plo2000 plo2010 i.year $x_pb      if cc_1 == 1, fe vce(robust)
 
 *eststo: reg   own post loc_ord post_loc_ord      if cc_1 == 1, cluster(ua_code)
 *eststo: xtreg own post loc_ord post_loc_ord      if cc_1 == 1, fe vce(robust)
@@ -242,7 +255,7 @@ esttab using "$out\own_reg_plo.tex", replace label
 title("Effects of Ordinances on Ownership (Decomposition)") se brackets
 order(plo*) keep(plo*)
 mtitle("Lax" "Lax with X" "Strict" "Strict, with X" )
-addnote("Limited to city center neighborhoods (lax or strict)." "All specifications include city and year fixed effects." "All specifications have cluster-robust standard (by city)." "Controls X are for housing characteristics at the neighborhood level." 
+addnote("Limited to city center neighborhoods (lax or strict)." "All specifications include city and year fixed effects." "All specifications have cluster-robust standard (by city)." "Controls X are for 1970 housing characteristics at the neighborhood level." 
 "Top $thr_u cities are included.") 
 r2 nocons star(+ .1 * 0.05 ** 0.01 *** 0.001);
 #delimit cr
@@ -311,10 +324,6 @@ graph export "$out\pd_base.png", replace name(pd_base)
 graph export "$out\chat_base.png", replace name(chat_base)
 graph export "$out\munit5pl_base.png", replace name(munit5pl_base)
 
-
-xx
-
-
 **Limit to 1980+
 /*
 eststo: reg own post loc_ord post_loc_ord      if cc_2 == 1 & year != 1970, r
@@ -363,22 +372,26 @@ tab year, gen(yr)
 
 local j = 1
 
+*gen ed_inc = educ_b/lminc
+
+*drop if ed_inc > 0.085
+
 foreach y in $yy {
 
 	*eststo: reg d`y' cond_pct   $x_p                                                 if bound_dist < `d' & year == 2010, r
 
-	eststo: xtreg    `y' own i.year if cc_2 == 1, fe vce(robust)	
+	eststo: xtreg    `y' own i.year age* if cc_2 == 1, fe vce(robust)	
 	*eststo: ivreg2   `y' (own = post_loc_ord) if cc_2 == 1, cluster(cbsa_num year) first
-	eststo: xtivreg `y' i.year (own = post_loc_ord) if cc_2 == 1,  fe vce(conventional) first small
+	eststo: xtivreg `y' i.year age* (own = post_loc_ord) if cc_2 == 1,  fe vce(conventional) first small
 	*estat overid
 	*eststo: reg `y' own $x_p if cc_2 == 1, r
 	*eststo: ivregress 2sls `y' $x_p (own = post loc_ord post_loc_ord) if cc_2 == 1, vce(r) first
 	*estat overid
 
 	*eststo: reg      `y' own  if cc_1 == 1, r
-	eststo: xtreg   `y' own i.year if cc_1 == 1, fe vce(robust)	
+	eststo: xtreg   `y' own i.year age* if cc_1 == 1, fe vce(robust)	
 	*eststo: ivreg2   `y' (own = post loc_ord post_loc_ord) if cc_1 == 1, cluster(ua_code) first
-	eststo: xtivreg `y' i.year (own = post_loc_ord) if cc_1 == 1,  fe vce(conventional) first small
+	eststo: xtivreg `y' i.year age* (own = post_loc_ord) if cc_1 == 1,  fe vce(conventional) first small
 
 	local t = var_names[`j']
 	local title = "Effect of Ownership on "+ "`t'"
@@ -387,7 +400,7 @@ foreach y in $yy {
 	#delimit ;
 	esttab using "$out\dd_iv_`y'.tex", replace label 
 	title("`title'") se brackets
-	addnote("Limited to city center neighborhoods (lax or strict)." "All specifications have clustered standard errors by city." "Top 100 cities are included.")
+	addnote("Limited to city center neighborhoods (lax or strict), includes age group controls." "All specifications have clustered standard errors by city." "Top 100 cities are included.")
 	order(own) keep(own)
 	mtitle("Lax, FE" "Lax, FE-IV" "Strict, FE" "Strict, FE-IV")
 	nocons ;
@@ -399,7 +412,63 @@ foreach y in $yy {
 	clear matrix
 
 	}
+	
+**Age Bar Effects
 
+mat age = J(6,4,.)
+
+local i = 1
+
+foreach v of varlist age20_25 age25_35 age35_45 age45_55 age55_65 age65pl {
+
+xtreg `v' own i.year if cc_1 == 1, fe vce(robust)
+mat age[`i', 1] = _b[own]
+mat age[`i', 2] = _se[own] 	
+xtivreg `v' i.year (own = post_loc_ord) if cc_1 == 1,  fe vce(conventional) first small
+mat age[`i', 3] = _b[own]
+mat age[`i', 4] = _se[own] 	
+ 
+local i = `i' + 1
+}
+
+svmat age 
+
+gen     age_cat = ""
+replace age_cat = "20 - 25" if _n == 1
+replace age_cat = "25 - 35" if _n == 2
+replace age_cat = "35 - 45" if _n == 3
+replace age_cat = "45 - 55" if _n == 4
+replace age_cat = "55 - 65" if _n == 5
+replace age_cat = "65+"     if _n == 6
+
+#delimit ;
+graph bar age1 age3, over(age_cat)
+name(age_bar, replace)
+title("Ownership Effects on Age Group Populations")
+ytitle("Effect")
+legend(order(1 "FE" 2 "FE, IV"))
+graphregion(color(white)) bgcolor(white);
+
+#delimit cr
+
+graph export "$out\age_bar.png", name(age_bar) replace
+ 	
+cut_ivreg munit5pl_base 100 lminc own "i.year" post_loc_ord "cc_1 != 1000" "fe vce(robust)" "fe vce(conventional) small" "Effect of Ownership on Income" "Pct 5+ Units" "Ln Income" 
+cut_ivreg pd_base 100 lminc own "i.year" post_loc_ord "cc_1 != 1000" "fe vce(robust)" "fe vce(conventional) small" "Effect of Ownership on Income" "Pop Dens" "Ln Income" 
+cut_ivreg munit5pl_base 100 educ_b own "i.year" post_loc_ord "cc_1 != 1000" "fe vce(robust)" "fe vce(conventional) small" "Effect of Ownership on Education" "Pct 5+ Units" "Pct Bach Deg +" 
+cut_ivreg pd_base 100 educ_b own "i.year" post_loc_ord "cc_1 != 1000" "fe vce(robust)" "fe vce(conventional) small" "Effect of Ownership on Education" "Pop Dens" "Pct Bach Deg +" 
+cut_ivreg munit5pl_base 100 shrwht own "i.year" post_loc_ord "cc_1 != 1000" "fe vce(robust)" "fe vce(conventional) small" "Effect of Ownership on Share White" "Pct 5+ Units" "Share White" 
+cut_ivreg pd_base 100 shrwht own "i.year" post_loc_ord "cc_1 != 1000" "fe vce(robust)" "fe vce(conventional) small" "Effect of Ownership on Share White" "Pop Dens" "Share White" 
+
+
+foreach n in lminc educ_b shrwht {
+
+graph export "$out\iv_`n'_pd.png", name(iv_`n'_pd_base) replace
+graph export "$out\iv_`n'_munit5pl.png", name(iv_`n'_munit5pl_base) replace
+
+}
+	
+/*
 local j = 1
 xx
 foreach y in $yy {
@@ -437,4 +506,5 @@ local j = `j' + 1
 clear matrix
 
 }
-
+*/
+cut_reg 
